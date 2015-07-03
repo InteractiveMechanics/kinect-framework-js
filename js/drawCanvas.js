@@ -17,13 +17,16 @@
               this._width = this._canvas.width;
               this._height = this._canvas.height;
               this._activePlayers = [];
+              this._pendingPlayers = [];
           },
           clearScreen: function () {
               this._context.clearRect(0, 0, this._width, this._height);
           },
           draw: function (players) {
+              var that = this;
               var playerCount = 0;
               var activePlayers = this._activePlayers;
+              var pendingPlayers = this._pendingPlayers;
 
               this.clearScreen();
               for (var p in players) {
@@ -32,11 +35,18 @@
                   // make sure to set their last position so it doesn't break the code
                   // fire the instructions for the new user
                   var index = activePlayers.indexOf(p);
+                  var pending = pendingPlayers.indexOf(p);
                   if (index === -1) {
-                      setTimeout(function () {
-                          activePlayers.push(p);
-                          this.showInstructions();
-                      }, 5000);
+                      if (pending === -1) {
+                          pendingPlayers.push(p);
+                          setTimeout(function () {
+                              pendingPlayers.splice(pending, 1);
+                              if (players[p]) {
+                                  activePlayers.push(p);
+                                  that.showInstructions(p);
+                              }
+                          }, 5000);
+                      }
                   } else {
                       playerCount++;
                   }
@@ -45,7 +55,8 @@
                   // draw their hands and do everything we need to do on-screen
                   if (playerCount <= constants.maxPlayers && index > -1) {
                       this.drawHands(p, players[p], this._lastPlayers[p]);
-                  } else {
+                  }
+                  if (playerCount > constants.maxPlayers) {
                       // if there are more players than we allow, start/stop an interval timer to show the "be nice" instructions
                       // don't show it again for 30 seconds after it goes once using a timer
                       this.showTooManyPlayers();
@@ -112,11 +123,11 @@
               }
               context.restore();
           },
-          showInstructions: function () {
-
+          showInstructions: function (p) {
+              console.log('instructions for ' + p);
           },
           showTooManyPlayers: function () {
-
+              console.log('too many players');
           },
           calculateAngleDistance: function (deltaX, deltaY) {
               var angle = Math.atan2(deltaX, deltaY) - 45 / Math.PI;
@@ -129,6 +140,7 @@
           _height: null,
           _lastPlayers: null,
           _activePlayers: null,
+          _pendingPlayers: null,
           _showAlert: false,
           _hideTooManyPlayers: false
       }
