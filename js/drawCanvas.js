@@ -4,7 +4,9 @@
     var constants = {
         maxPlayers: 4,
         handHeight: 76,
-        handWidth: 60
+        handWidth: 60,
+        instructionsDuration: 5000,
+        alertTimeout: 30000
     };
 
     var drawCanvas = WinJS.Class.define(
@@ -18,6 +20,7 @@
               this._height = this._canvas.height;
               this._activePlayers = [];
               this._pendingPlayers = [];
+              this._lastPlayers = {};
               this._lastConfidentPlayers = {};
           },
           clearScreen: function () {
@@ -25,13 +28,18 @@
           },
           draw: function (players) {
               var that = this;
-              var playerCount = 0;
+              var count = 0;
               var activePlayers = this._activePlayers;
               var pendingPlayers = this._pendingPlayers;
+              var lastPlayers = this._lastPlayers;
               var lastConfidentPlayers = this._lastConfidentPlayers;
 
               this.clearScreen();
               for (var p in players) {
+                  // I think we're going to need a check here where we add p to the pending players array first, then
+                  // use that information to decide if we have too many players 
+                  count++;
+
                   // when a new player enters the area, start a timer for 5 seconds before creating them on screen
                   // set the active players array for their number to true
                   // make sure to set their last position so it doesn't break the code
@@ -41,37 +49,30 @@
                   if (index === -1) {
                       if (pending === -1) {
                           pendingPlayers.push(p);
+                          console.log("Player " + p + " joined the game.")
+
                           setTimeout(function () {
                               pendingPlayers.splice(pending, 1);
                               if (players[p]) {
                                   activePlayers.push(p);
                                   lastConfidentPlayers[p] = players[p];
+                                  lastPlayers[p] = players[p];
                                   that.showInstructions(p);
                               }
                           }, 5000);
                       }
-                  } else {
-                      playerCount++;
                   }
 
                   // if there are less players than the max
                   // draw their hands and do everything we need to do on-screen
-                  if (playerCount <= constants.maxPlayers && index > -1) {
+                  if (activePlayers.length <= constants.maxPlayers && index > -1) {
                       this.drawHands(p, players[p], this._lastPlayers[p]);
                   }
-                  if (playerCount > constants.maxPlayers) {
-                      // if there are more players than we allow, start/stop an interval timer to show the "be nice" instructions
-                      // don't show it again for 30 seconds after it goes once using a timer
-                      this.showTooManyPlayers();
-                  }
-
-                  // when a player is not tracked on the screen, remove them from the active players array
-                  // and remove their data from the last players object
-                  if (!players[p]) {
-                      this._lastPlayers[p] = null;
-                      activePlayers.splice(index, 1);
-                  }
               }
+              // Run this method often, checks to see if we have too many people
+              this._totalBodies = count;
+              this.showTooManyPlayers(this._totalBodies);
+
               this._lastPlayers = players;
           },
           drawHands: function (p, player, lastPlayer) {
@@ -102,7 +103,7 @@
                   context.translate(-(Math.round(player['right']['pos']['x'] - constants.handWidth / 2)), Math.round(player['right']['pos']['y'] - constants.handHeight / 2));
                   context.drawImage(rightHand, -60, 0, 60, 76);
               } else if (player['right']['trackingState'] === 1 || 0) {
-                  context.translate(-(Math.round(lastPlayer['right']['pos']['x'] - constants.handWidth / 2)), Math.round(lastPlayer['right']['pos']['y'] - constants.handHeight / 2));
+                  context.translate(-(Math.round(this._lastConfidentPlayers[p]['right']['pos']['x'] - constants.handWidth / 2)), Math.round(this._lastConfidentPlayers[p]['right']['pos']['y'] - constants.handHeight / 2));
                   context.globalAlpha = 0.5;
                   context.drawImage(rightHand, -60, 0, 60, 76);
               }
@@ -127,15 +128,25 @@
                   context.drawImage(leftHand, Math.round(player['left']['pos']['x']), Math.round(player['left']['pos']['y']), 60, 76);
               } else if (player['left']['trackingState'] === 1 || 0) {
                   context.globalAlpha = 0.5;
-                  context.drawImage(leftHand, Math.round(lastPlayer['left']['pos']['x']), Math.round(lastPlayer['left']['pos']['y']), 60, 76);
+                  context.drawImage(leftHand, Math.round(this._lastConfidentPlayers[p]['left']['pos']['x']), Math.round(this._lastConfidentPlayers[p]['left']['pos']['y']), 60, 76);
               }
               context.restore();
           },
           showInstructions: function (p) {
-              console.log('instructions for ' + p);
+              console.log('Show instructions for Player ' + p);
           },
-          showTooManyPlayers: function () {
-              console.log('too many players');
+          showTooManyPlayers: function (count) {
+              // if our alert active variable is false, then show the message, fade it out after five seconds, and don't show it again for thirty seconds
+              // if the alert active variable is true, then do nothing
+              if (count > constants.maxPlayers && this._activeTooManyPlayers == false) {
+                  console.log('Too many players');
+                  this._activeTooManyPlayers = true;
+
+                  setTimeout(function () {
+                      console.log('Timer ended for "Too many players"');
+                      this._activeTooManyPlayers = false;
+                  }, constants.alertTimeout);
+              }
           },
           calculateAngleDistance: function (deltaX, deltaY) {
               var angle = Math.atan2(deltaX, deltaY) - 45 / Math.PI;
@@ -146,12 +157,19 @@
           _context: null,
           _width: null,
           _height: null,
+
+          // Stores object data for players as reference for confidence/history
           _lastPlayers: null,
           _lastConfidentPlayers: null,
+
+          // Keeps track of number of players and state
           _activePlayers: null,
           _pendingPlayers: null,
-          _showAlert: false,
-          _hideTooManyPlayers: false
+          _totalBodies: 0,
+
+          // For alerts and messages
+          _activeAlert: false,
+          _activeTooManyPlayers: false
       }
     );
 

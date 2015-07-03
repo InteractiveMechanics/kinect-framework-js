@@ -61,6 +61,11 @@
                   }
                   this._canvas.draw(players);
                   frame.close();
+              } else {
+                  // If we're not able to get data from the Kinect anymore, then we should close/reopen the reader
+                  // not sure if this is 100% successful yet
+                  this.closeReader();
+                  this.openReader();
               }
           },
           _getPlayerData: function (i, body) {
