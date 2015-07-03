@@ -1,2 +1,10 @@
-﻿body {
+﻿#kinectCanvas {
+    z-index: 10;
+}
+
+#kinectCanvas,
+#paintingCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
 }
