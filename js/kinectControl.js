@@ -3,8 +3,7 @@
 
     var nsKinect = WindowsPreview.Kinect;
     var constants = {
-        bodyCount: 6,
-        cameraZoom: 1
+        bodyCount: 6
     };
 
     var kinectControl = WinJS.Class.define(
@@ -154,8 +153,8 @@
           _mapPointToCanvasSpace: function (cameraSpacePoint) {
               var colourPoint = this._sensor.coordinateMapper.mapCameraPointToColorSpace(cameraSpacePoint);
 
-              colourPoint.x *= (1920 / this._sensorColourFrameDimensions.width) * constants.cameraZoom;
-              colourPoint.y *= (1080 / this._sensorColourFrameDimensions.height) * constants.cameraZoom;
+              colourPoint.x *= (1920 / this._sensorColourFrameDimensions.width);
+              colourPoint.y *= (1080 / this._sensorColourFrameDimensions.height);
 
               return (colourPoint);
           },

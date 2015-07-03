@@ -18,6 +18,7 @@
               this._height = this._canvas.height;
               this._activePlayers = [];
               this._pendingPlayers = [];
+              this._lastConfidentPlayers = {};
           },
           clearScreen: function () {
               this._context.clearRect(0, 0, this._width, this._height);
@@ -27,6 +28,7 @@
               var playerCount = 0;
               var activePlayers = this._activePlayers;
               var pendingPlayers = this._pendingPlayers;
+              var lastConfidentPlayers = this._lastConfidentPlayers;
 
               this.clearScreen();
               for (var p in players) {
@@ -43,6 +45,7 @@
                               pendingPlayers.splice(pending, 1);
                               if (players[p]) {
                                   activePlayers.push(p);
+                                  lastConfidentPlayers[p] = players[p];
                                   that.showInstructions(p);
                               }
                           }, 5000);
@@ -76,6 +79,9 @@
               var rightHand = new Image();
               var leftHand = new Image();
               
+              // If the kinect is confident and is able to accurately track the hand, then use that date and store it for the future
+              // if the kinect is not confident and is not able to accurately track the hand, then use the last set of confident data that was stored
+
               context.save();
               if (player['right']['confidence'] === 1) {
                   if (player['right']['status'] === 'closed') {
@@ -83,8 +89,9 @@
                   } else {
                       rightHand.src = 'images/P' + p + '_open.png';
                   }
+                  this._lastConfidentPlayers[p]['right'] = player['right'];
               } else {
-                  if (lastPlayer['right']['status'] === 'closed') {
+                  if (this._lastConfidentPlayers[p]['right']['status'] === 'closed') {
                       rightHand.src = 'images/P' + p + '_closed.png';
                   } else {
                       rightHand.src = 'images/P' + p + '_open.png';
@@ -108,8 +115,9 @@
                   } else {
                       leftHand.src = 'images/P' + p + '_open.png';
                   }
+                  this._lastConfidentPlayers[p]['left'] = player['left'];
               } else {
-                  if (lastPlayer['left']['status'] === 'closed') {
+                  if (this._lastConfidentPlayers[p]['left']['status'] === 'closed') {
                       leftHand.src = 'images/P' + p + '_closed.png';
                   } else {
                       leftHand.src = 'images/P' + p + '_open.png';
@@ -139,6 +147,7 @@
           _width: null,
           _height: null,
           _lastPlayers: null,
+          _lastConfidentPlayers: null,
           _activePlayers: null,
           _pendingPlayers: null,
           _showAlert: false,
